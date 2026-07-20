@@ -1,38 +1,50 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
+from langchain_core.embeddings import Embeddings
 
 from llm import llm
+
+import os
+import cohere
+from dotenv import load_dotenv
+
+load_dotenv()
+
+co = cohere.Client(os.getenv("COHERE_API_KEY"))
 
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
     chunk_overlap=200
 )
 
-embedding_model = None
 
-def get_embedding_model():
-    global embedding_model
-
-    if embedding_model is None:
-        embedding_model = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
+class CohereEmbeddings(Embeddings):
+    def embed_documents(self, texts):
+        response = co.embed(
+            texts=texts,
+            model="embed-english-v3.0",
+            input_type="search_document"
         )
+        return response.embeddings.float
 
-    return embedding_model
+    def embed_query(self, text):
+        response = co.embed(
+            texts=[text],
+            model="embed-english-v3.0",
+            input_type="search_query"
+        )
+        return response.embeddings.float[0]
 
-def get_embedding_model():
-    return embedding_model
+
+embedding_model = CohereEmbeddings()
+
 
 def create_chunks(text):
     return text_splitter.create_documents([text])
 
 
 def create_vectorstore(chunks):
-    return FAISS.from_documents(
-        chunks,
-        get_embedding_model()
-    )
+    return FAISS.from_documents(chunks, embedding_model)
 
 
 def ask_question(vectorstore, question):
@@ -45,7 +57,7 @@ You are a helpful assistant.
 
 Answer ONLY using the context below.
 
-If the answer is not present, reply:
+If the answer is not present, reply exactly:
 "I couldn't find that information in the uploaded PDF."
 
 Context:
@@ -57,7 +69,6 @@ Question:
 
     response = llm.invoke(prompt)
 
-    # Handle latest LangChain response format
     if hasattr(response, "text"):
         return response.text()
 
