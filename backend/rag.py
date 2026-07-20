@@ -25,7 +25,7 @@ class CohereEmbeddings(Embeddings):
             model="embed-english-v3.0",
             input_type="search_document"
         )
-        return response.embeddings.float
+        return response.embeddings
 
     def embed_query(self, text):
         response = co.embed(
@@ -33,7 +33,7 @@ class CohereEmbeddings(Embeddings):
             model="embed-english-v3.0",
             input_type="search_query"
         )
-        return response.embeddings.float[0]
+        return response.embeddings[0]
 
 
 embedding_model = CohereEmbeddings()
