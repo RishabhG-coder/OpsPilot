@@ -9,17 +9,27 @@ text_splitter = RecursiveCharacterTextSplitter(
     chunk_overlap=200
 )
 
-embedding_model = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
+embedding_model = None
 
+def get_embedding_model():
+    global embedding_model
+
+    if embedding_model is None:
+        embedding_model = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+
+    return embedding_model
 
 def create_chunks(text):
     return text_splitter.create_documents([text])
 
 
 def create_vectorstore(chunks):
-    return FAISS.from_documents(chunks, embedding_model)
+    return FAISS.from_documents(
+        chunks,
+        get_embedding_model()
+    )
 
 
 def ask_question(vectorstore, question):
