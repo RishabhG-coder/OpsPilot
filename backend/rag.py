@@ -1,5 +1,5 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
 from llm import llm
@@ -9,15 +9,17 @@ text_splitter = RecursiveCharacterTextSplitter(
     chunk_overlap=200
 )
 
-import os
-from dotenv import load_dotenv
+embedding_model = None
 
-load_dotenv()
+def get_embedding_model():
+    global embedding_model
 
-embedding_model = GoogleGenerativeAIEmbeddings(
-    model="text-embedding-004",
-    google_api_key=os.getenv("GOOGLE_API_KEY")
-)
+    if embedding_model is None:
+        embedding_model = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+
+    return embedding_model
 
 def get_embedding_model():
     return embedding_model
